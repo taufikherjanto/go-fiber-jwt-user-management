@@ -167,23 +167,21 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Buat objek user baru berdasarkan input
-	updatedUser := model.User{
-		Email:       userRequest.Email,
-		Fullname:    userRequest.Fullname,
-		Address:     userRequest.Address,
-		Gender:      userRequest.Gender,
-		PhoneNumber: userRequest.PhoneNumber,
-	}
+	// Perbarui data pengguna langsung pada objek `dataUser`
+	dataUser.Email = userRequest.Email
+	dataUser.Fullname = userRequest.Fullname
+	dataUser.Address = userRequest.Address
+	dataUser.Gender = userRequest.Gender
+	dataUser.PhoneNumber = userRequest.PhoneNumber
 
 	// Hanya set PasswordHash jika password baru disediakan
 	if userRequest.Password != "" {
 		hashedPassword := utils.GeneratePassword(userRequest.Password)
-		updatedUser.PasswordHash = hashedPassword
+		dataUser.PasswordHash = hashedPassword
 	}
 
-	// Perbarui data pengguna di database
-	result = database.DB.Model(&dataUser).Updates(updatedUser)
+	// Simpan perubahan ke database
+	result = database.DB.Save(&dataUser)
 	if result.Error != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": "Failed to update user",
@@ -191,10 +189,20 @@ func UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	// Kembalikan respons sukses
+	// Buat response DTO tanpa password
+	userResponse := model.UserResponseDTO{
+		ID:          dataUser.ID,
+		Email:       dataUser.Email,
+		Fullname:    dataUser.Fullname,
+		Address:     dataUser.Address,
+		Gender:      dataUser.Gender,
+		PhoneNumber: dataUser.PhoneNumber,
+	}
+
+	// Kembalikan respons sukses dengan data tanpa password
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"message": "User updated successfully",
-		"data":    updatedUser,
+		"data":    userResponse,
 	})
 }
 

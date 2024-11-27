@@ -17,12 +17,18 @@ func Register(c *fiber.Ctx) error {
 
 	// Parsing body permintaan ke dalam struct UserRequestDTO
 	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": true, "message": "Invalid request payload"})
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   true,
+			"message": "Invalid request payload",
+		})
 	}
 
 	// Periksa apakah email sudah ada di database menggunakan findUserByEmail
 	if _, err := findUserByEmail(req.Email); err == nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{"error": true, "message": "Email already exists"})
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+			"error":   true,
+			"message": "Email already exists",
+		})
 	}
 
 	// Validasi manual untuk password
@@ -75,22 +81,33 @@ func Login(c *fiber.Ctx) error {
 	// Mengambil pengguna berdasarkan email.
 	user, err := findUserByEmail(req.Email)
 	if err != nil {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": true, "message": err.Error()})
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error":   true,
+			"message": err.Error()})
 	}
 
 	// Memvalidasi password yang diberikan oleh pengguna.
 	if !utils.ComparePassword(user.PasswordHash, req.Password) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": true, "message": "Password salah"})
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   true,
+			"message": "Password salah",
+		})
 	}
 
 	// Menghasilkan token JWT untuk pengguna yang terautentikasi.
 	token, err := utils.GenerateToken(user)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": true, "message": "Gagal menghasilkan token"})
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   true,
+			"message": "Gagal menghasilkan token",
+		})
 	}
 
 	// Mengirimkan token yang dihasilkan setelah login berhasil.
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"success": true, "token": token})
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"success": true,
+		"token":   token,
+	})
 }
 
 // GetUserInfo mengambil informasi pengguna berdasarkan klaim JWT.
@@ -118,14 +135,20 @@ func GetUserInfo(c *fiber.Ctx) error {
 		})
 	}
 
-	// Mengirimkan detail pengguna setelah berhasil diambil.
+	// Membuat instance UserResponseDTO untuk respons tanpa password.
+	userResponse := model.UserResponseDTO{
+		ID:          user.ID,
+		Email:       user.Email,
+		Fullname:    user.Fullname,
+		Address:     user.Address,
+		Gender:      user.Gender,
+		PhoneNumber: user.PhoneNumber,
+	}
+
+	// Mengirimkan detail pengguna.
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
-		"user": fiber.Map{
-			"id":    user.ID,
-			"email": user.Email, // Mengirimkan email dari detail pengguna
-			// Anda bisa menambahkan field lain dari model.User jika diperlukan
-		},
+		"user":    userResponse,
 	})
 }
 
